@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "dev": "tsc --watch",
     "health-check": "node dist/health-check.js",
+    "test-order": "node dist/scripts/test-order.js",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

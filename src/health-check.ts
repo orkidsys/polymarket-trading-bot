@@ -1,5 +1,6 @@
 import { pingSupabase } from "./supabase/client.js";
 import { loadConfigFromEnv, getRpcUrl } from "./config/index.js";
+import { pingClob } from "./clob/client.js";
 
 async function checkRpc(): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -64,6 +65,18 @@ async function main(): Promise<void> {
     });
   } else {
     results.push({ name: "Polygon RPC", ok: false, error: "RPC_URL not set" });
+  }
+
+  // CLOB (optional; requires PROXY_WALLET + PRIVATE_KEY)
+  if (process.env.PROXY_WALLET && process.env.PRIVATE_KEY) {
+    const clobOk = await pingClob();
+    results.push({
+      name: "Polymarket CLOB",
+      ok: clobOk,
+      error: clobOk ? undefined : "Auth or connection failed",
+    });
+  } else {
+    results.push({ name: "Polymarket CLOB", ok: false, error: "PROXY_WALLET or PRIVATE_KEY not set" });
   }
 
   let allOk = true;

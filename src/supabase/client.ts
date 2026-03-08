@@ -131,3 +131,73 @@ export async function pingSupabase(): Promise<boolean> {
     return false;
   }
 }
+
+/** Our position row (open position we mirror). */
+export interface OurPositionRow {
+  id: string;
+  trader_address: string;
+  market_slug: string;
+  token_id: string;
+  outcome: string;
+  size: number;
+  avg_price: number | null;
+  cost_basis_usd: number | null;
+  opened_at: string;
+  updated_at: string;
+  closed_at: string | null;
+}
+
+/** Get our open position for a trader + market + outcome (closed_at IS NULL). */
+export async function getOurPosition(
+  traderAddress: string,
+  marketSlug: string,
+  outcome: string
+): Promise<OurPositionRow | null> {
+  const db = getSupabase();
+  const { data, error } = await db
+    .from("our_positions")
+    .select("*")
+    .eq("trader_address", traderAddress)
+    .eq("market_slug", marketSlug)
+    .eq("outcome", outcome)
+    .is("closed_at", null)
+    .maybeSingle();
+  if (error) throw new Error(`Supabase get our_position: ${error.message}`);
+  return data as OurPositionRow | null;
+}
+
+/** Insert new our_position (when opening). */
+export async function insertOurPosition(params: {
+  trader_address: string;
+  market_slug: string;
+  token_id: string;
+  outcome: string;
+  size: number;
+  avg_price?: number;
+  cost_basis_usd?: number;
+}): Promise<string> {
+  const db = getSupabase();
+  const { data, error } = await db.from("our_positions").insert(params).select("id").single();
+  if (error) throw new Error(`Supabase insert our_position: ${error.message}`);
+  return (data as { id: string }).id;
+}
+
+/** Update size/avg_price/cost_basis and optionally set closed_at. */
+export async function updateOurPosition(
+  positionId: string,
+  updates: {
+    size?: number;
+    avg_price?: number;
+    cost_basis_usd?: number;
+    closed_at?: string | null;
+  }
+): Promise<void> {
+  const db = getSupabase();
+  const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (updates.size !== undefined) row.size = updates.size;
+  if (updates.avg_price !== undefined) row.avg_price = updates.avg_price;
+  if (updates.cost_basis_usd !== undefined) row.cost_basis_usd = updates.cost_basis_usd;
+  if (updates.closed_at !== undefined) row.closed_at = updates.closed_at;
+  const { error } = await db.from("our_positions").update(row).eq("id", positionId);
+  if (error) throw new Error(`Supabase update our_position: ${error.message}`);
+}

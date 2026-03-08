@@ -12,7 +12,7 @@ Automated copy trading bot for Polymarket: mirrors trades from selected traders 
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - [Supabase](https://supabase.com) project
 - Polygon wallet with USDC and POL for gas
 - Polygon RPC (e.g. [Alchemy](https://alchemy.com), [Infura](https://infura.io))
@@ -74,7 +74,8 @@ You can also store traders in the `copied_traders` table and overrides in `copy_
 
 - `npm run build` — Compile TypeScript
 - `npm run start` — Run the bot
-- `npm run health-check` — Verify config, Supabase, and RPC
+- `npm run health-check` — Verify config, Supabase, RPC, and CLOB auth
+- `npm run test-order` — Place a single test order (set `TEST_ORDER_TOKEN_ID`, optional: `TEST_ORDER_PRICE`, `TEST_ORDER_SIZE`, `TEST_ORDER_MARKET_SLUG`, `TEST_ORDER_OUTCOME`, `TEST_ORDER_TRADER_ADDRESS`)
 - `npm run typecheck` — Type check without emit
 
 ## Docs
