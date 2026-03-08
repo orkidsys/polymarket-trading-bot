@@ -1,11 +1,11 @@
 /**
  * Polymarket Copy Trading Bot
- * Entry point: runs health check by default; monitor loop will be added in Phase 3.
+ * Entry point: starts the copy-trading monitor loop (poll → diff → size → aggregate → execute).
  */
 import "dotenv/config";
 import { loadConfig } from "./config/index.js";
 import { getCopiedTraders } from "./supabase/client.js";
-import { fetchPositions } from "./data-api/positions.js";
+import { runMonitorLoop, requestStop, isStopRequested } from "./monitor/index.js";
 
 async function main(): Promise<void> {
   console.log("Polymarket Copy Trading Bot\n");
@@ -24,17 +24,19 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Phase 1 demo: fetch positions for first trader
-  const first = traders[0];
-  console.log("\nFetching positions for", first.address, first.label ? `(${first.label})` : "");
-  const positions = await fetchPositions(first.address, { limit: 10 });
-  console.log("Positions count:", positions.length);
-  if (positions.length > 0) {
-    const p = positions[0];
-    console.log("Sample position:", p.marketSlug, p.outcome, "size:", p.size, "avgPrice:", p.avgPrice);
-  }
+  const handleSignal = (): void => {
+    if (isStopRequested()) {
+      console.log("\n[Main] Force exit.");
+      process.exit(1);
+    }
+    console.log("\n[Main] Shutting down gracefully (Ctrl+C again to force)...");
+    requestStop();
+  };
 
-  console.log("\nBot ready. Monitor loop and order execution will be added in Phase 2–3.");
+  process.on("SIGINT", handleSignal);
+  process.on("SIGTERM", handleSignal);
+
+  await runMonitorLoop();
 }
 
 main().catch((e) => {

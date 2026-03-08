@@ -54,6 +54,8 @@ npm run health-check
 npm start
 ```
 
+The bot runs the **monitor loop**: every `FETCH_INTERVAL` seconds it fetches each trader’s positions, diffs against the last snapshot, computes proportional sizes, aggregates small orders, and places orders on Polymarket. On the first run it only saves the current positions (no orders) so it doesn’t copy existing portfolios. Use Ctrl+C to stop gracefully.
+
 ## Configuration
 
 | Variable | Description |
