@@ -46,6 +46,11 @@ export function loadConfigFromEnv(): CopyConfig {
     maxPositionUsdRaw != null && maxPositionUsdRaw !== ""
       ? Number(maxPositionUsdRaw)
       : null;
+  const maxSpreadBpsRaw = process.env.MAX_SPREAD_BPS;
+  const maxSpreadBps =
+    maxSpreadBpsRaw != null && maxSpreadBpsRaw !== ""
+      ? Math.max(0, Math.min(1000, Number(maxSpreadBpsRaw)))
+      : null;
 
   return {
     tradeMultiplier,
@@ -53,6 +58,7 @@ export function loadConfigFromEnv(): CopyConfig {
     maxPositionUsd: maxPositionUsd != null && Number.isFinite(maxPositionUsd) ? maxPositionUsd : null,
     tieredMultipliers: parseTieredMultipliers(),
     maxSlippageBps,
+    maxSpreadBps,
   };
 }
 
@@ -89,6 +95,7 @@ export async function loadConfig(): Promise<CopyConfig> {
         overrides.max_slippage_bps != null
           ? Math.max(0, Math.min(1000, overrides.max_slippage_bps))
           : base.maxSlippageBps,
+      maxSpreadBps: base.maxSpreadBps,
     };
     return cachedConfig;
   } catch (e) {

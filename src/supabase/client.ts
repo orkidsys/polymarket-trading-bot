@@ -201,3 +201,14 @@ export async function updateOurPosition(
   const { error } = await db.from("our_positions").update(row).eq("id", positionId);
   if (error) throw new Error(`Supabase update our_position: ${error.message}`);
 }
+
+/** Get all open our_positions (closed_at IS NULL). */
+export async function getOurPositionsOpen(): Promise<OurPositionRow[]> {
+  const db = getSupabase();
+  const { data, error } = await db
+    .from("our_positions")
+    .select("*")
+    .is("closed_at", null);
+  if (error) throw new Error(`Supabase get our_positions open: ${error.message}`);
+  return (data ?? []) as OurPositionRow[];
+}

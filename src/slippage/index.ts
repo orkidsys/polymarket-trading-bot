@@ -60,15 +60,30 @@ export interface SlippageCheckResult {
 
 /**
  * For a given token and order params, fetch book and check slippage.
+ * If maxSpreadBps is set, also rejects when (bestAsk - bestBid) / mid > maxSpreadBps/10000.
  */
 export async function checkSlippage(
   tokenId: string,
   side: "BUY" | "SELL",
   limitPrice: number,
-  maxSlippageBps: number
+  maxSlippageBps: number,
+  maxSpreadBps?: number | null
 ): Promise<SlippageCheckResult> {
   const book = await getOrderBook(tokenId);
   const { bestBid, bestAsk } = getBestBidAsk(book);
+
+  if (maxSpreadBps != null && maxSpreadBps > 0 && bestBid > 0 && bestAsk > 0) {
+    const mid = (bestBid + bestAsk) / 2;
+    const spreadBps = (mid > 0 ? (bestAsk - bestBid) / mid : 0) * 10000;
+    if (spreadBps > maxSpreadBps) {
+      return {
+        ok: false,
+        reason: `Spread ${spreadBps.toFixed(0)} bps exceeds max ${maxSpreadBps} bps`,
+        bestBid,
+        bestAsk,
+      };
+    }
+  }
 
   const ok = isWithinSlippage(side, limitPrice, bestBid, bestAsk, maxSlippageBps);
   if (ok) return { ok: true, bestBid, bestAsk };

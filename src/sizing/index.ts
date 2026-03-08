@@ -60,7 +60,6 @@ export async function computeSizing(
     config.tieredMultipliers,
     config.tradeMultiplier
   );
-  const baseMult = config.tradeMultiplier;
   const mult = tierMult;
 
   let sizeShares: number;

@@ -2,6 +2,7 @@ import type { CopyConfig } from "../types/index.js";
 import { loadConfig } from "../config/index.js";
 import { initClobClient, createAndPostOrder } from "../clob/client.js";
 import { checkSlippage, getOrderBookOptions } from "../slippage/index.js";
+import { withRetry } from "../lib/retry.js";
 import {
   insertCopyTrade,
   getOurPosition,
@@ -43,7 +44,8 @@ export async function executeOrder(intent: OrderIntent): Promise<ExecuteResult> 
     intent.tokenId,
     intent.side,
     intent.limitPrice,
-    config.maxSlippageBps
+    config.maxSlippageBps,
+    config.maxSpreadBps
   );
   if (!slippageResult.ok) {
     console.warn("[Executor] Slippage check failed:", slippageResult.reason);
@@ -58,14 +60,18 @@ export async function executeOrder(intent: OrderIntent): Promise<ExecuteResult> 
 
   let orderResponse: { orderID?: string; status?: string; error?: string };
   try {
-    orderResponse = await createAndPostOrder({
-      tokenID: intent.tokenId,
-      price: intent.limitPrice,
-      side: intent.side,
-      size: intent.sizeShares,
-      tickSize,
-      negRisk,
-    });
+    orderResponse = await withRetry(
+      () =>
+        createAndPostOrder({
+          tokenID: intent.tokenId,
+          price: intent.limitPrice,
+          side: intent.side,
+          size: intent.sizeShares,
+          tickSize,
+          negRisk,
+        }),
+      { maxRetries: 2, baseMs: 1000 }
+    );
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : String(e);
     console.error("[Executor] createAndPostOrder failed:", errMsg);

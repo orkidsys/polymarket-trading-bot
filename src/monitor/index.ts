@@ -5,7 +5,10 @@ import { computePositionDiff } from "../position-diff/index.js";
 import { computeSizing } from "../sizing/index.js";
 import { aggregateIntents } from "../aggregator/index.js";
 import { executeOrder } from "../executor/index.js";
+import { reconcileOurPositions } from "../position-tracking/reconcile.js";
 import type { OrderIntent } from "../executor/index.js";
+
+const RECONCILE_EVERY_CYCLES = Number(process.env.RECONCILE_INTERVAL_CYCLES) || 60;
 
 let stopRequested = false;
 
@@ -93,9 +96,12 @@ export async function runMonitorLoop(): Promise<void> {
   console.log(
     "[Monitor] Starting loop:",
     config.fetchIntervalSec,
-    "s interval, traders from config/DB"
+    "s interval, traders from config/DB, reconcile every",
+    RECONCILE_EVERY_CYCLES,
+    "cycles"
   );
 
+  let cycle = 0;
   while (!stopRequested) {
     const traders = await getCopiedTraders();
     if (traders.length === 0) {
@@ -109,6 +115,16 @@ export async function runMonitorLoop(): Promise<void> {
         await processTrader(address);
       } catch (e) {
         console.error("[Monitor] Trader", address, "error:", e);
+      }
+    }
+
+    cycle++;
+    if (cycle % RECONCILE_EVERY_CYCLES === 0) {
+      try {
+        const { closed } = await reconcileOurPositions();
+        if (closed > 0) console.log("[Monitor] Reconciled", closed, "positions closed");
+      } catch (e) {
+        console.warn("[Monitor] Reconcile error:", e);
       }
     }
 

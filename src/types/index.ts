@@ -24,6 +24,8 @@ export interface CopyConfig {
   maxPositionUsd: number | null;
   tieredMultipliers: TieredMultiplier[];
   maxSlippageBps: number;
+  /** Optional: skip order if (ask-bid)/mid > this (basis points). */
+  maxSpreadBps: number | null;
 }
 
 /** Row from copied_traders */
